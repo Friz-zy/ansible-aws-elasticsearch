@@ -1,6 +1,6 @@
 # ansible-aws-elasticsearch
 
-Create AWS environment in new VPC with at least two regions and setup Elasticsearch cluster with autodiscovery: cluster will be automatically reconfigured after any changes in nodes amount.
+Create AWS environment in new VPC with at least two regions and setup Elasticsearch cluster with [autodiscovery](https://www.elastic.co/guide/en/elasticsearch/plugins/current/cloud-aws-discovery.html#cloud-aws-discovery): cluster will be automatically reconfigured after any changes in nodes amount.
 
 ### Requirements:
 
