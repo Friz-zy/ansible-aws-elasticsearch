@@ -76,20 +76,13 @@
             delete_on_termination: false
       with_items: "{{ vpc.subnets }}"
 
-    - name: Collect list of created instances
-      ec2_remote_facts:
-        region: "{{ vpc_region }}"
-        filters:
-          vpc-id: "{{ vpc.vpc.id }}"
-      register: ec2
-
     - name: Create Load Balancer
       ec2_elb_lb:
         name: "{{ lb_name }}"
         region: "{{ vpc_region }}"
         state: present
         scheme: internal
-        subnets: "{{ vpc_subnets|map(attribute='cidr')|list }}"
+        subnets: "{{ vpc.subnets|map(attribute='id')|list }}"
         listeners:
           - protocol: http
             load_balancer_port: 9200
@@ -102,10 +95,3 @@
           interval: 30 # seconds
           unhealthy_threshold: 2
           healthy_threshold: 10
-
-    - name: Attach new instances into LB
-      ec2_elb:
-        instance_id: "{{ item }}"
-        ec2_elbs: "{{ lb_name }}"
-        state: present
-      with_items: "{{ ec2.instance_ids }}"

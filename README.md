@@ -65,9 +65,19 @@ es_data_dir: "{{ es_mount_point }}/elasticsearch/data"
 ### Create aws environment
 
 ```shell
-ansible-playbook -i ec2.py create_project.yml
+ansible-playbook setup_aws.yml
 ```
 
-If you want download existed project from git you should provide `git_url` variable
+What will be created:
+- Ssh key pair
+- VPC with subnets in different regions
+- Network security group that allows any ssh traffic and internal vpc traffic
+- IAM role with policy that allows ec2 discovery
+- Ec2 instances in all vpc networks
+- Internal load balancer
+
+### Install Elasticsearch
+
 ```shell
-ansible-playbook -i ec2.py create_project.yml -e "git_url=<git url>"
+ansible-playbook setup_elasticsearch.yml
+```
