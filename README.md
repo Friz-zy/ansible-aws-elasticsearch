@@ -1,5 +1,7 @@
 # ansible-aws-elasticsearch
 
+Create AWS environment in new VPC with at least two regions and setup Elasticsearch cluster with autodiscovery: cluster will be automatically reconfigured after any changes in nodes amount.
+
 ### Requirements:
 
 - Ansible
@@ -26,6 +28,7 @@ Edit the `group_vars/all.yml` vars file:
 cluster: elasticsearch
 
 # Tags
+# if you'll change `Name` then change it in `setup_elasticsearch.yml` twice too ;)
 tags:
   Name: "{{ cluster }}"
 
@@ -79,5 +82,12 @@ What will be created:
 ### Install Elasticsearch
 
 ```shell
-ansible-playbook setup_elasticsearch.yml
+ansible-playbook -i inventory/ setup_elasticsearch.yml
 ```
+
+What will be created:
+- Mount /dev/sdb as /data on instances
+- Install Elasticsearch 2.x
+- Install cloud-aws plugin for elasticsearch
+- Set java heap size as half or ram for elasticsearch
+- Configure autodiscovery via ec2 tags for elasticsearch nodes
