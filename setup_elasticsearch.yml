@@ -2,8 +2,17 @@
 - hosts: "tag_Name_{{ cluster }}"
   become: yes
   remote_user: ubuntu
-
+  vars_files:
+    - "group_vars/all.yml"
   pre_tasks:
+    - name: Check if device exists as we expected
+      stat: path="{{ instances_device_name }}"
+      register: dev
+
+    - name: Create symlink if path does not exists
+      file: src="{{ instances_device_name|replace('s', 'xv') }}" dest="{{ instances_device_name }}" state=link
+      when: dev.stat.islnk is not defined
+
     - name: Create ext4 fs on second disk
       filesystem: fstype=ext4 dev="{{ instances_device_name }}"
       ignore_errors: yes
@@ -14,7 +23,8 @@
   roles:
     - elasticsearch
 
-  post_tasks:
+- hosts: localhost
+  tasks:
     - name: Collect list of created instances
       ec2_remote_facts:
         region: "{{ vpc_region }}"
@@ -22,6 +32,7 @@
           instance-state-name: running
           "tag:Name": "{{ cluster }}"
       register: ec2
+
     - name: Attach new instances into LB
       ec2_elb:
         instance_id: "{{ item.id }}"

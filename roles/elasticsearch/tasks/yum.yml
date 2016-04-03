@@ -1,7 +1,5 @@
 - name: Add Elasticsearch gpg key
   rpm_key: url=https://packages.elastic.co/GPG-KEY-elasticsearch state=present
-  tags:
-    - install
 
 - name: Add Elasticsearch repository.
   copy:
@@ -15,6 +13,3 @@
     - curl
     - java-1.7.0-openjdk
     - elasticsearch
-  tags:
-    - install
-

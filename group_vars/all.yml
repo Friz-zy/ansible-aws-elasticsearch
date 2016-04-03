@@ -2,6 +2,7 @@
 cluster: elasticsearch
 
 # Tags
+# if you'll change `Name` then change it in `setup_elasticsearch.yml` twice too ;) 
 tags:
   Name: "{{ cluster }}"
 
