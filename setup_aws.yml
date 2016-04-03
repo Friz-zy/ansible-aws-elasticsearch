@@ -38,6 +38,7 @@
             cidr_ip: 0.0.0.0/0
           - proto: all
             cidr_ip: "{{ vpc_cidr_block }}"
+      register: vpc_sg
 
     - name: Create IAM role
       iam:
@@ -64,7 +65,7 @@
         region: "{{ vpc_region }}"
         key_name: "{{ key_name }}"
         instance_tags: "{{ tags }}"
-        #termination_protection: yes
+        termination_protection: yes
         group: "{{ sg_name }}"
         vpc_subnet_id: "{{ item.id }}"
         count: "{{ instances_count }}"
@@ -82,6 +83,7 @@
         region: "{{ vpc_region }}"
         state: present
         scheme: internal
+        security_group_ids: "{{ vpc_sg.group_id }}"
         subnets: "{{ vpc.subnets|map(attribute='id')|list }}"
         listeners:
           - protocol: http
