@@ -1,0 +1,73 @@
+---
+- include: yum.yml
+  when: ansible_os_family == 'RedHat'
+  tags:
+    - install
+
+- include: apt.yml
+  when: ansible_os_family == 'Debian'
+  tags:
+    - install
+
+- name: Create the Elasticsearch directories.
+  file: path={{ item }} owner=elasticsearch group=elasticsearch state=directory
+  with_items:
+    - "{{ es_data_dir }}"
+    - "{{ es_logs_dir }}"
+    - "{{ es_plugins_dir }}"
+  tags:
+    - install
+
+- name: Configure init script.
+  lineinfile: >
+    dest=/etc/init.d/elasticsearch
+    regexp="{{ item.regexp }}"
+    line="{{ item.line }}"
+    state=present
+  with_items:
+    - { regexp: '^#?\s*DATA_DIR', line: "DATA_DIR={{ es_data_dir }}" }
+    - { regexp: '^#?\s*LOG_DIR', line: "LOG_DIR={{ es_logs_dir }}" }
+    - { regexp: '^#?\s*ES_HEAP_SIZE', line: 'ES_HEAP_SIZE={{ ansible_memtotal_mb/2 | round | int }}m' }
+  notify: restart elasticsearch
+  tags:
+    - install
+
+
+- name: Initial Elasticsearch configuration.
+  lineinfile: >
+    dest=/etc/elasticsearch/elasticsearch.yml
+    regexp="{{ item.regexp }}"
+    line="{{ item.line }}"
+    state=present
+  with_items:
+    - { regexp: '^#?\s*cluster\.name:', line: "cluster.name: {{ es_cluster_name }}" }
+    - { regexp: '^#?\s*node\.name:', line: "node.name: {{ inventory_hostname }}" }
+    - { regexp: '^#?\s*path\.data:', line: "path.data: {{ es_data_dir }}" }
+    - { regexp: '^#?\s*path\.logs:', line: "path.logs: {{ es_logs_dir }}" }
+    - { regexp: '^#?\s*bootstrap\.mlockall:', line: "bootstrap.mlockall: true" }
+    - { regexp: '^#?\s*network\.bind_host:', line: 'network.bind_host: _ec2:privateIp_' }
+    - { regexp: '^#?\s*network\.publish_host:', line: 'network.publish_host: _ec2:privateIp_' }
+    - { regexp: '^#?\s*discovery\.type:', line: 'discovery.type: ec2' }
+    - { regexp: '^#?\s*discovery\.ec2\.tag\.Name:', line: 'discovery.ec2.tag.Name: "{{ cluster }}"' }
+    - { regexp: '^#?\s*cloud\.node\.auto_attributes:', line: 'cloud.node.auto_attributes: true' }
+  notify: restart elasticsearch
+  tags:
+    - install
+
+- name: Update Elasticsearch discovery configuration with ec2 tags.
+  lineinfile: >
+    dest=/etc/elasticsearch/elasticsearch.yml
+    regexp="^#?\s*discovery\.ec2\.tag\.{{ item.0 }}:"
+    line="discovery.ec2.tag.{{ item.0 }}: {{ item.1 }}"
+    state=present
+  with_together:
+    - "{{ tags.keys() }}"
+    - "{{ tags.values() }}"
+  notify: restart elasticsearch
+
+
+- name: Install cloud-aws plugin.
+  command: /usr/share/elasticsearch/bin/plugin install cloud-aws
+  notify: restart elasticsearch
+  tags:
+    - install

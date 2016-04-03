@@ -1,0 +1,19 @@
+- name: Add Elasticsearch gpg key
+  apt_key: url=https://packages.elastic.co/GPG-KEY-elasticsearch state=present
+  tags:
+    - install
+
+- name: Add Elasticsearch repo
+  apt_repository: repo='deb http://packages.elastic.co/elasticsearch/2.x/debian stable main' state=present
+  tags:
+    - install
+
+- name: Install Elasticsearch
+  apt: name={{ item }} state=latest update_cache=yes
+  with_items:
+    - curl
+    - openjdk-7-jdk
+    - elasticsearch
+  tags:
+    - install
+

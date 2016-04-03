@@ -1,0 +1,15 @@
+---
+- hosts: "tag_Name_{{ cluster }}"
+  become: yes
+  remote_user: ubuntu
+
+  pre_tasks:
+    - name: Create ext4 fs on second disk
+      filesystem: fstype=ext4 dev="{{ instances_device_name }}"
+      ignore_errors: yes
+
+    - name: Mount second disk to mount point
+      mount: name="{{ es_mount_point }}" src="{{ instances_device_name }}" fstype=ext4 state=mounted
+
+  roles:
+    - elasticsearch

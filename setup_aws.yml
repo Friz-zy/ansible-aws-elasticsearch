@@ -1,0 +1,111 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Creates an new ec2 key with mentioned name if not present
+      ec2_key:
+        region: "{{ vpc_region }}"
+        name: "{{ key_name }}"
+        key_material:  "{{ lookup('file',  ssh_key_location ) }}"
+
+    - name: Create VPC
+      ec2_vpc:
+        state: present
+        cidr_block: "{{ vpc_cidr_block }}"
+        resource_tags: { "Name":"{{ vpc_name }}" }
+        subnets: "{{ vpc_subnets }}"
+        internet_gateway: True
+        route_tables:
+          - subnets: "{{ vpc_subnets|map(attribute='cidr')|list }}"
+            routes:
+              - dest: 0.0.0.0/0
+                gw: igw
+        region: "{{ vpc_region }}"
+      register: vpc
+
+    - name: Create ec2 security group
+      ec2_group:
+        name: "{{ sg_name }}"
+        description: "{{ cluster }} security group"
+        region: "{{ vpc_region }}"
+        vpc_id: "{{ vpc.vpc.id }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: all
+            cidr_ip: "{{ vpc_cidr_block }}"
+
+    - name: Create IAM role
+      iam:
+        iam_type: role
+        name: "elasticsearch_discovery"
+        state: present
+        region: "{{ vpc_region }}"
+
+    - name: Attach IAM policy to role
+      iam_policy:
+        iam_type: role
+        iam_name: "elasticsearch_discovery"
+        policy_name: "elasticsearch"
+        state: present
+        policy_document: elasticsearch_policy.json
+
+    - name: Create ec2 instance
+      ec2:
+        wait: yes
+        monitoring: yes
+        wait_timeout: 600
+        image: "{{ image }}"
+        assign_public_ip: yes
+        region: "{{ vpc_region }}"
+        key_name: "{{ key_name }}"
+        instance_tags: "{{ tags }}"
+        #termination_protection: yes
+        group: "{{ sg_name }}"
+        vpc_subnet_id: "{{ item.id }}"
+        count: "{{ instances_count }}"
+        instance_type: "{{ instances_type }}"
+        instance_profile_name: "elasticsearch_discovery"
+        volumes:
+          - device_name: "{{ instances_device_name }}"
+            volume_size: "{{ instances_data_size }}"
+            delete_on_termination: false
+      with_items: "{{ vpc.subnets }}"
+
+    - name: Collect list of created instances
+      ec2_remote_facts:
+        region: "{{ vpc_region }}"
+        filters:
+          vpc-id: "{{ vpc.vpc.id }}"
+      register: ec2
+
+    - name: Create Load Balancer
+      ec2_elb_lb:
+        name: "{{ lb_name }}"
+        region: "{{ vpc_region }}"
+        state: present
+        scheme: internal
+        subnets: "{{ vpc_subnets|map(attribute='cidr')|list }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 9200
+            instance_port: 9200
+        health_check:
+          ping_protocol: http # options are http, https, ssl, tcp
+          ping_port: 9200
+          ping_path: "/" # not required for tcp or ssl
+          response_timeout: 5 # seconds
+          interval: 30 # seconds
+          unhealthy_threshold: 2
+          healthy_threshold: 10
+
+    - name: Attach new instances into LB
+      ec2_elb:
+        instance_id: "{{ item }}"
+        ec2_elbs: "{{ lb_name }}"
+        state: present
+      with_items: "{{ ec2.instance_ids }}"

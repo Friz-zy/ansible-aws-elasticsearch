@@ -1,0 +1,4 @@
+---
+es_cluster_name: elasticsearch_production
+es_data_dir: /data/elasticsearch/data
+es_logs_dir: /var/log/elasticsearch

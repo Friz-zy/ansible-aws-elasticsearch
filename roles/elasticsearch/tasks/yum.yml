@@ -1,0 +1,20 @@
+- name: Add Elasticsearch gpg key
+  rpm_key: url=https://packages.elastic.co/GPG-KEY-elasticsearch state=present
+  tags:
+    - install
+
+- name: Add Elasticsearch repository.
+  copy:
+    src: elasticsearch.repo
+    dest: /etc/yum.repos.d/elasticsearch.repo
+    mode: 0644
+
+- name: Install Elasticsearch
+  yum: name={{ item }} state=latest update_cache=yes
+  with_items:
+    - curl
+    - java-1.7.0-openjdk
+    - elasticsearch
+  tags:
+    - install
+
