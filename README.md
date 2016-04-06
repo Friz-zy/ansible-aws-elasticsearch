@@ -1,6 +1,6 @@
 # ansible-aws-elasticsearch
 
-Create AWS environment in new VPC with at least two regions and setup Elasticsearch cluster with [autodiscovery](https://www.elastic.co/guide/en/elasticsearch/plugins/current/cloud-aws-discovery.html#cloud-aws-discovery): cluster will be automatically reconfigured after any changes in nodes amount. This scheme will work in most cases, maybe except cases when you need automatically set up new nodes after some monitoring events, but even in this cases there is some solutions like additional pipelines: internal aws solutions (or chef in opsworks instead of ansible) or external tools like [StackStorm](https://github.com/StackStorm/st2). 
+Create AWS environment in new VPC with at least two zones in one region and setup Elasticsearch cluster with [autodiscovery](https://www.elastic.co/guide/en/elasticsearch/plugins/current/cloud-aws-discovery.html#cloud-aws-discovery): cluster will be automatically reconfigured after any changes in nodes amount. This scheme will work in most cases, maybe except cases when you need automatically set up new nodes after some monitoring events, but even in this cases there is some solutions like additional pipelines: internal aws solutions (or chef in opsworks instead of ansible) or external tools like [StackStorm](https://github.com/StackStorm/st2). 
 
 ### Requirements:
 
